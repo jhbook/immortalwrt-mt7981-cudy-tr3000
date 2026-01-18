@@ -59,6 +59,9 @@ echo 1 > /sys/class/gpio/modem_power/value
 - luci-app-upnp
 - kmod-usb-net-cdc-ether
 - kmod-usb-net-rndis
+- kmod-usb-net-ncm
+- kmod-usb-net-huawei-cdc-ncm
+- kmod-usb-net-cdc-eem
 - kmod-mtd-rw
 
 ---
