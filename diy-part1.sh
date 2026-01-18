@@ -33,8 +33,6 @@ rm -rf package/luci-app-easytier-tmp
 # 修复 luci.util.pcdata 兼容报错（官方指定方案）
 sed -i 's/util.pcdata/xml.pcdata/g' package/luci-app-easytier/luasrc/model/cbi/easytier*.lua
 
-# 覆盖i18n文件，避免编译警告（官方同款操作）
-cat > package/luci-app-easytier/root/etc/uci-defaults/luci-i18n-easytier-zh-cn << 'EOF'
-#!/bin/sh
-exit 0
-EOF
+#【关键修复】删除 luci-app-easytier 中冲突的 uci-defaults 文件
+# 防止它与 luci-i18n-easytier-zh-cn 包冲突
+rm -f package/luci-app-easytier/root/etc/uci-defaults/luci-i18n-easytier-zh-cn
