@@ -32,5 +32,5 @@ mkdir -p files/etc/openclash/core
 wget -qO "clash_meta.tar.gz" "https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-arm64.tar.gz"
 tar -zxvf "clash_meta.tar.gz" -C files/etc/openclash/core/
 mv files/etc/openclash/core/clash files/etc/openclash/core/clash_meta
-chmod 755 files/etc/openclash/core/clash_meta
+chmod 555 files/etc/openclash/core/clash_meta
 rm -f "clash_meta.tar.gz"
