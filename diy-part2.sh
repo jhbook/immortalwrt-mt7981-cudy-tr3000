@@ -32,20 +32,26 @@ chmod 0755 package/base-files/files/etc/uci-defaults/99-luci-theme-argon
 # Modify hostname
 #sed -i 's/OpenWrt/P3TERX-Router/g' package/base-files/files/bin/config_generate
 
-# ===== 软件源替换为浙江大学镜像 mirrors.zju.edu.cn =====
+# ===== 软件源替换为南京大学镜像 mirror.nju.edu.cn =====
 # /etc/opkg/distfeeds.conf 由 include/feeds.mk 按 %U（即 VERSION_REPO）动态生成，
 # 改 include/version.mk 里的 VERSION_REPO 就能把全部 opkg 源指向镜像站
-sed -i 's#https://downloads.immortalwrt.org#https://mirrors.zju.edu.cn/immortalwrt#g' include/version.mk
-sed -i 's#https://mirrors.vsean.net/openwrt#https://mirrors.zju.edu.cn/immortalwrt#g' include/version.mk
-# 兜底：源码树里若存在静态 distfeeds 模板也一并替换
-grep -rl 'downloads.immortalwrt.org' --include='distfeeds*' . 2>/dev/null | xargs -r sed -i 's#https://downloads.immortalwrt.org#https://mirrors.zju.edu.cn/immortalwrt#g'
+sed -i 's#https://downloads.immortalwrt.org#https://mirror.nju.edu.cn/immortalwrt#g' include/version.mk
+sed -i 's#https://mirrors.vsean.net/openwrt#https://mirror.nju.edu.cn/immortalwrt#g' include/version.mk
+# 幂等：若源码树里残留了上一轮用过的镜像基址（例如浙大），也一并纠正到南大
+sed -i 's#https://mirrors.zju.edu.cn/immortalwrt#https://mirror.nju.edu.cn/immortalwrt#g' include/version.mk
+# 说明：源码树里另有 package/mtk/applications/luci-app-openfi/root/usr/opkg/distfeeds.conf
+# 这类由其它包自带的静态源文件，其地址指向已废弃的 targets/mediatek/mt7981 路径
+# （实测南大/浙大/官方三个镜像均 404），与 /etc/opkg/distfeeds.conf 无关，故不做替换。
 
 # 临时解决Rust问题
 sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
 
 # add date in output file name
-sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
-       -e '/^IMG_PREFIX:=/ s/\($(SUBTARGET)\)/\1-$(BUILD_DATE)/' include/image.mk
+# 幂等：BUILD_DATE 注入只做一次，重复运行 diy-part2.sh 不会让文件名里的日期叠加
+if ! grep -q 'BUILD_DATE' include/image.mk; then
+	sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
+	       -e '/^IMG_PREFIX:=/ s/\($(SUBTARGET)\)/\1-$(BUILD_DATE)/' include/image.mk
+fi
 
 # set ubi to 122M
 # sed -i 's/reg = <0x5c0000 0x7000000>;/reg = <0x5c0000 0x7a40000>;/' target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-ubootmod.dts
