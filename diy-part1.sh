@@ -23,7 +23,17 @@ if [ -d "$GITHUB_WORKSPACE/package/luci-compat-keep" ]; then
   cp -r "$GITHUB_WORKSPACE/package/luci-compat-keep" package/
 fi
 
-git clone https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
-git clone https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
+# 主题改用 feeds/luci 自带的 luci-theme-argon + luci-app-argon-config，
+# 不再克隆第三方 Aurora 主题（以下两行已弃用，保留备查）
+# git clone https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
+# git clone https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
+
 git clone https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
 git clone https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
+
+# luci-app-run：在 LuCI 页面上传并运行 .run / .sh / .ipk / .apk 安装包
+# 注意仓库根目录下的 luci-app-run/ 子目录才是包本体，因此先克隆到临时目录再拷贝
+rm -rf /tmp/luci-app-run
+git clone --depth=1 https://github.com/wukongdaily/luci-app-run /tmp/luci-app-run
+mkdir -p package/luci-app-run
+cp -a /tmp/luci-app-run/luci-app-run/. package/luci-app-run/

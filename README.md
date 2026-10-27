@@ -53,12 +53,18 @@ echo 1 > /sys/class/gpio/modem_power/value
 
 ---
 
+## 默认主题与软件源
+
+- 默认主题为 **Argon**（`luci-theme-argon` + `luci-app-argon-config`，直接取自 luci feed）。`diy-part2.sh` 已把 `luci-light` 集合的主题依赖由 bootstrap 换成 argon，并写入 `99-luci-theme-argon` 脚本，在首次启动时锁定 `luci.main.mediaurlbase`，避免与各主题自带的 uci-defaults 互相覆盖。
+- 固件内置的 opkg 软件源指向浙江大学镜像 `https://mirrors.zju.edu.cn/immortalwrt/releases/24.10-SNAPSHOT`：由 `config/*.config` 中的 `CONFIG_VERSION_REPO` 与 `diy-part2.sh` 改写源码树 `include/version.mk` 共同保证（`/etc/opkg/distfeeds.conf` 由 `include/feeds.mk` 按 `%U` 动态生成，不是静态文件）。
+
+---
+
 ## 第三方软件包
 
 - [OpenClash](https://github.com/vernesong/OpenClash)
 - [Bandix](https://github.com/timsaya/luci-app-bandix)
-- [luci-theme-aurora](https://github.com/eamonxg/luci-theme-aurora)
-- [luci-app-aurora-config](https://github.com/eamonxg/luci-app-aurora-config)
+- [luci-app-run](https://github.com/wukongdaily/luci-app-run)
 - luci-app-ttyd
 - luci-app-upnp
 - kmod-usb-net-cdc-ether
