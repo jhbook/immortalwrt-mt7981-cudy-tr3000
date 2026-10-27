@@ -59,6 +59,56 @@ echo 1 > /sys/class/gpio/modem_power/value
 
 ---
 
+## USB 外接上网（网络共享 / 随身 WiFi）
+
+USB 口（`xhci-mtk` 控制器）编译时已内置以下驱动，插入设备即可识别，**无需额外安装**：
+
+| 驱动 | 对应设备 |
+| --- | --- |
+| `kmod-usb-net-cdc-ether` | CDC-ECM 类设备：部分随身 WiFi、USB 网卡、部分手机 |
+| `kmod-usb-net-rndis` | Android 手机 USB 网络共享 |
+| `kmod-usb-storage` / `-uas` | U 盘、移动硬盘（已内置 ext4 / ntfs3 / btrfs 等文件系统驱动） |
+
+实测 **中兴 F32 Pro 随身 WiFi** 可用：插入后自动识别为 `eth2`（内核日志显示 `ZTE CDC Ethernet Device`），走 ECM 模式，免驱。
+
+### 配置成第二路 WAN
+
+```sh
+# 1. 插入设备后确认新网口出现（通常是 eth2）
+ip -br link
+
+# 2. 新建 wwan 接口（DHCP 客户端）
+uci set network.wwan=interface
+uci set network.wwan.device='eth2'
+uci set network.wwan.proto='dhcp'
+uci set network.wwan.metric='20'     # 20 = 备用线路（有线断了自动切过来）；想优先用可设 10
+
+# 3. 并入 wan 防火墙区域（自动 NAT）
+uci set firewall.@zone[1].network='wan wan6 wwan'
+
+uci commit network && uci commit firewall
+ifup wwan
+```
+
+验证方法：`ping -I eth2 223.5.5.5`——`-I` 后面要写**内核网口名**（如 `eth2`），不是逻辑接口名 `wwan`。
+
+### 不支持的设备
+
+如果设备插上后**只出现 U 盘、不出现网口**，说明它需要模式切换或走 QMI / MBIM / PPP，当前固件**未包含**这些组件：
+
+| 缺少的包 | 用途 |
+| --- | --- |
+| `usb-modeswitch` | 把网棒从「U 盘模式」切到「网卡模式」（多数 4G/5G 网棒必需） |
+| `kmod-usb-net-qmi-wwan` + `uqmi` + `luci-proto-qmi` | 高通方案 QMI 设备 |
+| `kmod-usb-net-cdc-mbim` + `umbim` + `luci-proto-mbim` | MBIM 设备（5G 模块常见） |
+| `kmod-usb-net-cdc-ncm` | CDC-NCM 设备 |
+| `kmod-usb-serial-option` + `comgt` + `luci-proto-3g` | 老式 PPP 串口设备 |
+| `kmod-usb-net-ipheth` | iPhone USB 共享 |
+
+需要的话在 `config/*.config` 里打开对应开关（或在设备上 `opkg install`）后重新编译即可，全套约 1.5–2 MB。
+
+---
+
 ## 默认主题与软件源
 
 - 默认主题为 **Argon**（`luci-theme-argon` + `luci-app-argon-config`，直接取自 luci feed）。`diy-part2.sh` 已把 `luci-light` 集合的主题依赖由 bootstrap 换成 argon，并写入 `99-luci-theme-argon` 脚本，在首次启动时锁定 `luci.main.mediaurlbase`，避免与各主题自带的 uci-defaults 互相覆盖。
