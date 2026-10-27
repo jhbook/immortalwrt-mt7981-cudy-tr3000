@@ -47,11 +47,17 @@ sed -i 's#https://mirrors.zju.edu.cn/immortalwrt#https://mirror.nju.edu.cn/immor
 sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
 
 # add date in output file name
-# 幂等：BUILD_DATE 注入只做一次，重复运行 diy-part2.sh 不会让文件名里的日期叠加
+# 幂等：先把 include/image.mk 恢复成源码树原始版本（历史重复注入会把日期叠成一长串），再注入一次。
+# 云端 runner 是干净 clone，不需要这步；本地重复编译时必须要有。
+if [ -d .git ]; then
+	git checkout -- include/image.mk 2>/dev/null || true
+fi
 if ! grep -q 'BUILD_DATE' include/image.mk; then
 	sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
 	       -e '/^IMG_PREFIX:=/ s/\($(SUBTARGET)\)/\1-$(BUILD_DATE)/' include/image.mk
 fi
 
 # set ubi to 122M
-# sed -i 's/reg = <0x5c0000 0x7000000>;/reg = <0x5c0000 0x7a40000>;/' target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-ubootmod.dts
+# 该设备树改动已移到 diy-device.sh：diy-part2.sh 在编译流程里只执行一次，
+# 而 112M / 122M 的差异必须按设备在编译循环内逐个应用，否则多设备会互相污染。
+# 对应行：reg = <0x5c0000 0x7000000>;  →  reg = <0x5c0000 0x7a40000>;

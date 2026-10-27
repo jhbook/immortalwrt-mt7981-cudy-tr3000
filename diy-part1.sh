@@ -34,7 +34,12 @@ fi
 
 # luci-app-run：在 LuCI 页面上传并运行 .run / .sh / .ipk / .apk 安装包
 # 注意仓库根目录下的 luci-app-run/ 子目录才是包本体，因此先克隆到临时目录再拷贝
-rm -rf /tmp/luci-app-run
-git clone --depth=1 https://github.com/wukongdaily/luci-app-run /tmp/luci-app-run
-mkdir -p package/luci-app-run
-cp -a /tmp/luci-app-run/luci-app-run/. package/luci-app-run/
+# 幂等：目录已存在就跳过，避免本地重复编译时 GitHub 抖动把整轮编译打断
+if [ ! -d package/luci-app-run ]; then
+  rm -rf /tmp/luci-app-run
+  git clone --depth=1 https://github.com/wukongdaily/luci-app-run /tmp/luci-app-run && \
+    mkdir -p package/luci-app-run && \
+    cp -a /tmp/luci-app-run/luci-app-run/. package/luci-app-run/
+else
+  echo "luci-app-run 已存在，跳过 clone"
+fi

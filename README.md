@@ -12,14 +12,20 @@
 
 ---
 
-## 大分区 ubootmod 固件
+## ubi 分区档位（64M / 112M / 122M / 256M）
 
-本仓库默认编译的 ubootmod 固件为 112M 分区，若你想编译 122M 分区固件，请将 `diy-part2.sh` 中取消以下注释：
+仓库内置四种编译目标，运行 Actions 时在 `device` 里选择（或选 `all` 一次编完全部）：
 
-```sh
-# set ubi to 122M
-# sed -i 's/reg = <0x5c0000 0x7000000>;/reg = <0x5c0000 0x7a40000>;/' target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-ubootmod.dts
-```
+| 编译目标 | config | ubi 分区 | 设备树 ubi 行 | 适用设备 |
+| --- | --- | --- | --- | --- |
+| `128M` | `config/128m.config` | 64M | `...-v1.dts`：`<0x5c0000 0x4000000>` | 原厂布局 / 未扩容 |
+| `128M-Ubootmod` | `config/128muboot.config` | 112M | `...-v1-ubootmod.dts`：`<0x5c0000 0x7000000>` | 已刷 ubootmod BL2+FIP |
+| `122M-Ubootmod` | `config/122m.config` | 122M（到 flash 末尾） | 同上，改写为 `<0x5c0000 0x7a40000>` | 已刷 ubootmod，U-Boot 里选 122M 档 |
+| `256M` | `config/256m.config` | 单分区 | `...-v1-256mb.dts` | 256M flash 机型 |
+
+112M 与 122M 的唯一差异是设备树里的 ubi 大小，由 `diy-device.sh` 在编译循环内按设备名切换；`diy-part2.sh` 一个 job 只执行一次，放那里会让多设备互相污染。两者共用同一个 profile，因此产物按 `-ubootmod-112m-` / `-ubootmod-122m-` 重命名区分。
+
+⚠️ **设备树里的 ubi 大小必须和 U-Boot 建立的 ubi 布局一致**，否则内核挂载根文件系统失败 → boot loop（无限重启）。刷 122M 固件前请确认 U-Boot Web 界面里有 122M 档并选中它。
 
 ---
 
@@ -56,7 +62,7 @@ echo 1 > /sys/class/gpio/modem_power/value
 ## 默认主题与软件源
 
 - 默认主题为 **Argon**（`luci-theme-argon` + `luci-app-argon-config`，直接取自 luci feed）。`diy-part2.sh` 已把 `luci-light` 集合的主题依赖由 bootstrap 换成 argon，并写入 `99-luci-theme-argon` 脚本，在首次启动时锁定 `luci.main.mediaurlbase`，避免与各主题自带的 uci-defaults 互相覆盖。
-- 固件内置的 opkg 软件源指向南京大学镜像 `https://mirror.nju.edu.cn/immortalwrt/releases/24.10-SNAPSHOT`：由 `config/*.config` 中的 `CONFIG_VERSION_REPO` 与 `diy-part2.sh` 改写源码树 `include/version.mk` 共同保证（`/etc/opkg/distfeeds.conf` 由 `include/feeds.mk` 按 `%U` 动态生成，不是静态文件）。
+- 固件内置的 opkg 软件源指向南京大学镜像 `https://mirror.nju.edu.cn/immortalwrt/releases/24.10-SNAPSHOT`：由 `diy-part2.sh` 改写源码树 `include/version.mk` 里的 `VERSION_REPO` 生效（`/etc/opkg/distfeeds.conf` 由 `include/feeds.mk` 按 `%U` 动态生成，不是静态文件）。`config/*.config` 里的 `CONFIG_VERSION_REPO` 只是留档：它不是 Kconfig 符号，`make defconfig` 会把它丢掉，真正起作用的是 `version.mk`。
 
 ---
 

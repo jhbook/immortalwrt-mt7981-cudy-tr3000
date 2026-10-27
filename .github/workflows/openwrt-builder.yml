@@ -17,6 +17,7 @@ on:
           - '256M'
           - '128M'
           - '128M-Ubootmod'
+          - '122M-Ubootmod'
           - 'all' 
       repo:
         description: '指定源码仓库地址'
@@ -86,6 +87,7 @@ jobs:
             "256M") echo "CONFIG_FILE=config/256m.config" >> $GITHUB_ENV ;;
             "128M") echo "CONFIG_FILE=config/128m.config" >> $GITHUB_ENV ;;
             "128M-Ubootmod") echo "CONFIG_FILE=config/128muboot.config" >> $GITHUB_ENV ;;
+            "122M-Ubootmod") echo "CONFIG_FILE=config/122m.config" >> $GITHUB_ENV ;;
           esac
 
       - name: 👩‍💻 Copy previous config if exists
@@ -208,7 +210,7 @@ jobs:
         run: |
           # 1. 确定编译列表
           if [ "${DEVICE_INPUT}" = "all" ]; then
-            DEVICES="256M 128M 128M-Ubootmod"
+            DEVICES="256M 128M 128M-Ubootmod 122M-Ubootmod"
           else
             DEVICES="${DEVICE_INPUT}"
           fi
@@ -225,12 +227,18 @@ jobs:
               "256M") CONFIG="config/256m.config" ;;
               "128M") CONFIG="config/128m.config" ;;
               "128M-Ubootmod") CONFIG="config/128muboot.config" ;;
+              "122M-Ubootmod") CONFIG="config/122m.config" ;;
             esac
             
             echo "Using Config: $CONFIG"
             
             # 3. 加载配置
             cp -f $GITHUB_WORKSPACE/$CONFIG .config
+
+            # 3.5 按设备改造源码（112M / 122M 的区别只在设备树的 ubi 分区大小）
+            #     放在循环内执行，连续编译多台设备时每台都会重新设置成自己的布局
+            chmod +x $GITHUB_WORKSPACE/diy-device.sh
+            $GITHUB_WORKSPACE/diy-device.sh "$DEV"
             
             # 4. 刷新配置并下载
             make defconfig
@@ -243,13 +251,28 @@ jobs:
               make -j1 V=s || exit 1
             fi
 
+            # 6. 收集本设备产物
+            #    128M-Ubootmod 与 122M-Ubootmod 共用同一个 profile，生成的固件文件名完全相同，
+            #    必须在这里就按变体重命名，否则后编的会覆盖先编的
+            case "$DEV" in
+              128M-Ubootmod) SUFFIX="-ubootmod-112m" ;;
+              122M-Ubootmod) SUFFIX="-ubootmod-122m" ;;
+              *)             SUFFIX="" ;;
+            esac
+            echo "📥 Collecting $DEV artifacts"
+            find bin/targets -name "*sysupgrade.bin" | while read -r f; do
+              base=$(basename "$f")
+              if [ -n "$SUFFIX" ]; then
+                base="${base/-ubootmod-/${SUFFIX}-}"
+              fi
+              cp -f "$f" "$GITHUB_WORKSPACE/firmware_collection/$base"
+              echo "  → $base"
+            done
+
             echo "✅ $DEV build finished."
             df -hT /workdir
             echo "::endgroup::"
           done
-
-          echo "📥 Collecting artifacts"
-          find bin/targets/ -name "*sysupgrade.bin" -exec cp {} $GITHUB_WORKSPACE/firmware_collection/ \;
 
           echo "status=success" >> $GITHUB_OUTPUT
 
