@@ -28,9 +28,9 @@ fi
 # git clone https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
 # git clone https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
 
-# 幂等：本地重复编译时目录已存在，直接跳过 clone
-[ -d package/luci-app-bandix ] || git clone https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
-[ -d package/openwrt-bandix ] || git clone https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
+# bandix：已停用（与 luci-app-wrtbwmon 功能重叠，2026-10-27 关闭，节省约 4.6M 解压空间）
+# [ -d package/luci-app-bandix ] || git clone https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
+# [ -d package/openwrt-bandix ] || git clone https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
 
 # luci-app-run：在 LuCI 页面上传并运行 .run / .sh / .ipk / .apk 安装包
 # 注意仓库根目录下的 luci-app-run/ 子目录才是包本体，因此先克隆到临时目录再拷贝
