@@ -148,6 +148,10 @@ build_device() {
     log "使用 ccache 加速（上限 $CCACHE_MAXSIZE）"
   fi
 
+  # 清掉上一次留下的 sysupgrade 产物：112M/122M 与普通固件在 bin/targets 里是同名文件，
+  # 且历史上 BUILD_DATE 重复注入会留下怪名字，不清的话本轮会把陈旧固件一并收进 firmware_collection
+  rm -f bin/targets/*/*/*sysupgrade.bin
+
   log "开始编译 [$dev]  -j$JOBS"
   if ! make -j"$JOBS" "${CC_ARGS[@]}"; then
     log "多线程失败，改用单线程 V=s 重试"
