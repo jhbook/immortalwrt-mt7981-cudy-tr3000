@@ -1,0 +1,8 @@
+# ── 本地编译产物（体积大，不随仓库发布）──
+firmware_collection/
+
+# ── 本地临时文件与日志 ──
+_vm.cjs
+_ssh_probe.cjs
+_deps.sh
+*.log
