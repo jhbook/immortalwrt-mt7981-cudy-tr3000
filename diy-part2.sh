@@ -10,8 +10,13 @@
 # See /LICENSE for more information.
 #
 
-# Modify default IP
-#sed -i 's/192.168.1.1/192.168.50.5/g' package/base-files/files/bin/config_generate
+# ===== 默认管理地址改为 192.168.10.1 =====
+# 上游 padavanonly/immortalwrt-mt798x-6.6 已把 lan 默认值从 192.168.1.1 改成 192.168.6.1
+# （package/base-files/files/bin/config_generate 里 `ipad=${ipaddr:-"192.168.6.1"}`），
+# 所以旧的 `s/192.168.1.1/...` 写法根本命中不了。这里按上游实际值替换，
+# 同时保留 1.1 那一条以兼容上游回退；ruijie 机型的 192.168.110.1 特例不受影响。
+sed -i 's/ipad=${ipaddr:-"192\.168\.6\.1"}/ipad=${ipaddr:-"192.168.10.1"}/' package/base-files/files/bin/config_generate
+sed -i 's/ipad=${ipaddr:-"192\.168\.1\.1"}/ipad=${ipaddr:-"192.168.10.1"}/' package/base-files/files/bin/config_generate
 
 # ===== 默认主题改为 Argon =====
 # luci 元集合只依赖 luci-light，真正声明默认主题（luci-theme-bootstrap）的是 luci-light 集合
